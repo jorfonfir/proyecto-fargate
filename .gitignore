@@ -1,0 +1,30 @@
+# Ignorar archivos de estado de Terraform/OpenTofu
+*.tfstate
+*.tfstate.backup
+crash.log
+override.tf
+override.tf.json
+.terraform/
+
+# Archivos con variables sensibles
+terraform.tfvars
+
+# Archivos de plan (opcional)
+tfplan
+*.tfplan
+
+# Archivos generados por editores
+*.swp
+*.swo
+.idea/
+.vscode/
+*.bak
+*.log
+*.tmp
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de credenciales AWS locales
+.aws/credentials
