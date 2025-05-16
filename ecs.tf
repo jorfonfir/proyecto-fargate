@@ -147,10 +147,11 @@ resource "aws_ecs_service" "wordpress_service" {
   task_definition = aws_ecs_task_definition.wordpress_task.arn
   desired_count   = 2
   launch_type     = "FARGATE"
+
   network_configuration {
-    subnets          = [aws_subnet.private_1.id, aws_subnet.private_2.id]
+    subnets          = [aws_subnet.public_1.id, aws_subnet.public_2.id] # Cambia a subredes públicas
     security_groups  = [aws_security_group.wordpress_sg.id]
-    assign_public_ip = false
+    assign_public_ip = true # Esto es CLAVE para tener salida a Internet
   }
 }
 
