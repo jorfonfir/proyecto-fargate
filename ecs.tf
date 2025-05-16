@@ -1,6 +1,6 @@
 resource "aws_security_group" "wordpress_sg" {
   name        = "wordpress_sg"
-  description = "Allow HTTP traffic"
+  description = "Allow HTTP and NFS traffic"
   vpc_id      = aws_vpc.wordpress.id
 
   ingress {
@@ -8,6 +8,13 @@ resource "aws_security_group" "wordpress_sg" {
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port       = 2049
+    to_port         = 2049
+    protocol        = "tcp"
+    security_groups = [aws_security_group.wordpress_sg.id]
   }
 
   egress {
@@ -24,10 +31,10 @@ resource "aws_security_group" "mysql_sg" {
   vpc_id      = aws_vpc.wordpress.id
 
   ingress {
-    from_port         = 3306
-    to_port           = 3306
-    protocol          = "tcp"
-    security_groups   = [aws_security_group.wordpress_sg.id]
+    from_port       = 3306
+    to_port         = 3306
+    protocol        = "tcp"
+    security_groups = [aws_security_group.wordpress_sg.id]
   }
 
   egress {
@@ -39,15 +46,21 @@ resource "aws_security_group" "mysql_sg" {
 }
 
 resource "aws_efs_file_system" "wordpress_efs" {
-  creation_token = "wordpress-efs"
-  performance_mode = var.efs_performance_mode
-  throughput_mode  = var.efs_throughput_mode
-  encrypted        = true
+  creation_token    = "wordpress-efs"
+  performance_mode  = var.efs_performance_mode
+  throughput_mode   = var.efs_throughput_mode
+  encrypted         = true
 }
 
-resource "aws_efs_mount_target" "wordpress_mount_target" {
-  file_system_id = aws_efs_file_system.wordpress_efs.id
-  subnet_id      = aws_subnet.private_1.id
+resource "aws_efs_mount_target" "wordpress_mount_target_public_1" {
+  file_system_id  = aws_efs_file_system.wordpress_efs.id
+  subnet_id       = aws_subnet.public_1.id
+  security_groups = [aws_security_group.wordpress_sg.id]
+}
+
+resource "aws_efs_mount_target" "wordpress_mount_target_public_2" {
+  file_system_id  = aws_efs_file_system.wordpress_efs.id
+  subnet_id       = aws_subnet.public_2.id
   security_groups = [aws_security_group.wordpress_sg.id]
 }
 
@@ -102,31 +115,32 @@ resource "aws_ecs_task_definition" "wordpress_task" {
   memory                   = "512"
   execution_role_arn      = aws_iam_role.ecs_task_execution_role.arn
   task_role_arn           = aws_iam_role.ecs_task_role.arn
-  container_definitions   = jsonencode([{
-    name      = "wordpress"
-    image     = "wordpress:latest"
-    essential = true
+
+  container_definitions = jsonencode([{
+    name      = "wordpress",
+    image     = "wordpress:latest",
+    essential = true,
     environment = [
       {
-        name  = "WORDPRESS_DB_HOST"
+        name  = "WORDPRESS_DB_HOST",
         value = "aurora-cluster.cluster-xyz.us-east-1.rds.amazonaws.com"
       },
       {
-        name  = "WORDPRESS_DB_NAME"
+        name  = "WORDPRESS_DB_NAME",
         value = var.db_name
       },
       {
-        name  = "WORDPRESS_DB_USER"
+        name  = "WORDPRESS_DB_USER",
         value = var.db_username
       },
       {
-        name  = "WORDPRESS_DB_PASSWORD"
+        name  = "WORDPRESS_DB_PASSWORD",
         value = var.db_password
       }
-    ]
+    ],
     mountPoints = [
       {
-        containerPath = "/var/www/html"
+        containerPath = "/var/www/html",
         sourceVolume  = "wordpress_data"
       }
     ]
@@ -149,9 +163,9 @@ resource "aws_ecs_service" "wordpress_service" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = [aws_subnet.public_1.id, aws_subnet.public_2.id] # Cambia a subredes públicas
+    subnets          = [aws_subnet.public_1.id, aws_subnet.public_2.id]
     security_groups  = [aws_security_group.wordpress_sg.id]
-    assign_public_ip = true # Esto es CLAVE para tener salida a Internet
+    assign_public_ip = true
   }
 }
 
@@ -159,7 +173,7 @@ resource "aws_lb" "wordpress_alb" {
   name               = "wordpress-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups   = [aws_security_group.wordpress_sg.id]
+  security_groups    = [aws_security_group.wordpress_sg.id]
   subnets            = [aws_subnet.public_1.id, aws_subnet.public_2.id]
 }
 
@@ -174,9 +188,9 @@ resource "aws_lb_listener" "wordpress_listener" {
   load_balancer_arn = aws_lb.wordpress_alb.arn
   port              = 80
   default_action {
-    type             = "fixed-response"
+    type = "fixed-response"
     fixed_response {
-      status_code = 200
+      status_code  = 200
       content_type = "text/plain"
       message_body = "OK"
     }
