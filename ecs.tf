@@ -11,11 +11,11 @@ resource "aws_security_group" "wordpress_sg" {
   }
 
   ingress {
-    from_port       = 2049
-    to_port         = 2049
-    protocol        = "tcp"
-    security_groups = [aws_security_group.wordpress_sg.id]
-  }
+  from_port       = 2049
+  to_port         = 2049
+  protocol        = "tcp"
+  self            = true
+}
 
   egress {
     from_port   = 0
@@ -167,6 +167,14 @@ resource "aws_ecs_service" "wordpress_service" {
     security_groups  = [aws_security_group.wordpress_sg.id]
     assign_public_ip = true
   }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.wordpress_tg.arn
+    container_name   = "wordpress"
+    container_port   = 80
+  }
+
+  depends_on = [aws_lb_listener.wordpress_listener]
 }
 
 resource "aws_lb" "wordpress_alb" {
@@ -178,21 +186,29 @@ resource "aws_lb" "wordpress_alb" {
 }
 
 resource "aws_lb_target_group" "wordpress_tg" {
-  name     = "wordpress-tg"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.wordpress.id
+  name        = "wordpress-tg"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.wordpress.id
+  target_type = "ip"  # Importante para Fargate
+  health_check {
+    path                = "/"
+    protocol            = "HTTP"
+    matcher             = "200-399"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
 }
 
 resource "aws_lb_listener" "wordpress_listener" {
   load_balancer_arn = aws_lb.wordpress_alb.arn
   port              = 80
+  protocol          = "HTTP"
+
   default_action {
-    type = "fixed-response"
-    fixed_response {
-      status_code  = 200
-      content_type = "text/plain"
-      message_body = "OK"
-    }
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.wordpress_tg.arn
   }
 }
