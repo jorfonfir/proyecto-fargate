@@ -8,6 +8,7 @@ override.tf.json
 
 # Archivos con variables sensibles
 terraform.tfvars
+*.tfvars
 
 # Archivos de plan (opcional)
 tfplan
