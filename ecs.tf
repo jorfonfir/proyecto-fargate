@@ -107,6 +107,11 @@ resource "aws_iam_role" "ecs_task_role" {
   })
 }
 
+resource "aws_cloudwatch_log_group" "wordpress" {
+  name              = "/ecs/wordpress"
+  retention_in_days = 14
+}
+
 resource "aws_ecs_task_definition" "wordpress_task" {
   family                   = "wordpress-task"
   network_mode             = "awsvpc"
@@ -120,6 +125,13 @@ resource "aws_ecs_task_definition" "wordpress_task" {
     name      = "wordpress",
     image     = "wordpress:latest",
     essential = true,
+
+     portMappings = [{
+      containerPort = 80
+      hostPort      = 80
+      protocol      = "tcp"
+    }]
+    
     environment = [
       {
         name  = "WORDPRESS_DB_HOST",
@@ -143,7 +155,16 @@ resource "aws_ecs_task_definition" "wordpress_task" {
         containerPath = "/var/www/html",
         sourceVolume  = "wordpress_data"
       }
-    ]
+    ],
+
+    logConfiguration = {
+      logDriver = "awslogs",
+      options = {
+        awslogs-group         = "/ecs/wordpress"
+        awslogs-region        = "eu-south-2"
+        awslogs-stream-prefix = "ecs"
+      }
+    }
   }])
 
   volume {
