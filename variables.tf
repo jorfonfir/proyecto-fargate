@@ -19,3 +19,8 @@ variable "efs_performance_mode" {
 variable "efs_throughput_mode" {
   default = "bursting"
 }
+variable "github_oauth_token" {
+  description = "OAuth token para acceder al repositorio de GitHub desde CodePipeline"
+  type        = string
+  sensitive   = true
+}
