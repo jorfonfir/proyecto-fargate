@@ -77,11 +77,11 @@ resource "aws_codepipeline" "wordpress_pipeline" {
     name = "Source"
 
     action {
-      name             = "Source"
+      name             = "Github_Source"
       category         = "Source"
       owner            = "ThirdParty"
       provider         = "GitHub"
-      version          = "1"
+      version          = "2"
       output_artifacts = ["source_output"]
 
       configuration = {
