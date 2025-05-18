@@ -39,7 +39,16 @@ resource "aws_iam_policy" "codepipeline_s3_policy" {
         "${aws_s3_bucket.tfvars_bucket.arn}",
         "${aws_s3_bucket.tfvars_bucket.arn}/*"
       ]
-    }]
+    },
+      {
+        Effect = "Allow",
+        Action = [
+          "codebuild:StartBuild",
+          "codebuild:BatchGetBuilds"
+        ],
+        Resource = aws_codebuild_project.terraform_build.arn
+      }
+    ]
   })
 }
 
