@@ -21,6 +21,94 @@ resource "aws_iam_role" "codepipeline_role" {
   })
 }
 
+resource "aws_iam_policy" "codepipeline_s3_policy" {
+  name = "codepipeline-s3-access"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect   = "Allow",
+      Action   = [
+        "s3:GetObject",
+        "s3:GetObjectVersion",
+        "s3:PutObject",
+        "s3:PutObjectAcl",
+        "s3:GetBucketVersioning"
+      ],
+      Resource = [
+        "${aws_s3_bucket.tfvars_bucket.arn}",
+        "${aws_s3_bucket.tfvars_bucket.arn}/*"
+      ]
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "codepipeline_s3_attachment" {
+  role       = aws_iam_role.codepipeline_role.name
+  policy_arn = aws_iam_policy.codepipeline_s3_policy.arn
+}
+
+resource "aws_iam_role" "codebuild_role" {
+  name = "codebuild-terraform-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect    = "Allow",
+      Principal = { Service = "codebuild.amazonaws.com" },
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_policy" "codebuild_policy" {
+  name = "codebuild-terraform-permissions"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect   = "Allow",
+        Action   = [
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+          "s3:PutObject",
+          "s3:GetBucketVersioning"
+        ],
+        Resource = [
+          "${aws_s3_bucket.tfvars_bucket.arn}",
+          "${aws_s3_bucket.tfvars_bucket.arn}/*"
+        ]
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "ec2:*",
+          "ecs:*",
+          "elasticloadbalancing:*",
+          "iam:PassRole",
+          "cloudwatch:*"
+        ],
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "codebuild_policy_attachment" {
+  role       = aws_iam_role.codebuild_role.name
+  policy_arn = aws_iam_policy.codebuild_policy.arn
+}
+
 resource "aws_codebuild_project" "terraform_build" {
   name        = "terraform-wordpress-build"
   description = "Terraform deployment"
@@ -46,24 +134,6 @@ resource "aws_codebuild_project" "terraform_build" {
   }
 }
 
-resource "aws_iam_role" "codebuild_role" {
-  name = "codebuild-terraform-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Effect = "Allow",
-      Principal = { Service = "codebuild.amazonaws.com" },
-      Action = "sts:AssumeRole"
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "codebuild_permissions" {
-  role       = aws_iam_role.codebuild_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
-}
-
 resource "aws_codepipeline" "wordpress_pipeline" {
   name     = "wordpress-pipeline"
   role_arn = aws_iam_role.codepipeline_role.arn
@@ -81,7 +151,7 @@ resource "aws_codepipeline" "wordpress_pipeline" {
       category         = "Source"
       owner            = "ThirdParty"
       provider         = "GitHub"
-      version          = "2"
+      version          = "1"
       output_artifacts = ["source_output"]
 
       configuration = {

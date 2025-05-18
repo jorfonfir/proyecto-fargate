@@ -135,7 +135,7 @@ resource "aws_ecs_task_definition" "wordpress_task" {
     environment = [
       {
         name  = "WORDPRESS_DB_HOST",
-        value = "aurora-cluster.cluster-xyz.us-east-1.rds.amazonaws.com"
+        value = aws_rds_cluster.aurora.endpoint
       },
       {
         name  = "WORDPRESS_DB_NAME",
@@ -232,4 +232,19 @@ resource "aws_lb_listener" "wordpress_listener" {
     type             = "forward"
     target_group_arn = aws_lb_target_group.wordpress_tg.arn
   }
+}
+
+output "alb_dns_name" {
+  description = "URL pública del Application Load Balancer"
+  value       = aws_lb.wordpress_alb.dns_name
+}
+
+output "aurora_endpoint" {
+  description = "Endpoint de conexión de Aurora"
+  value       = aws_rds_cluster.aurora.endpoint
+}
+
+output "efs_id" {
+  description = "ID del sistema de archivos EFS"
+  value       = aws_efs_file_system.wordpress_efs.id
 }
