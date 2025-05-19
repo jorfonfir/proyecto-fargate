@@ -4,7 +4,7 @@ env:
   variables:
     AWS_REGION: "eu-south-2"
     REPO_NAME: "wordpress"
-    AWS_ACCOUNT_ID: "703671920691"
+    AWS_ACCOUNT_ID: "xxxxxxx"
 
 phases:
   pre_build:
@@ -13,7 +13,7 @@ phases:
       - aws --version
       - "aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
       - export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - echo "Usando tag: $IMAGE_TAG"
+      - echo "Usando tag:$IMAGE_TAG"
 
   build:
     commands:
