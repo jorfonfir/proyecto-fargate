@@ -1,0 +1,21 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      terraform: 1.6
+    commands:
+      - echo "Installing unzip, curl, and jq"
+      - apt-get update && apt-get install -y unzip curl jq
+  pre_build:
+    commands:
+      - echo "Downloading terraform.tfvars from S3"
+      - aws s3 cp s3://wordpress-terraform-tfvars/terraform.tfvars terraform.tfvars
+  build:
+    commands:
+      - echo "Initializing Terraform"
+      - terraform init
+      - echo "Validating Terraform"
+      - terraform validate
+      - echo "Applying Terraform"
+      - terraform apply -auto-approve -var-file="terraform.tfvars"
