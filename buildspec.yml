@@ -1,0 +1,31 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_REGION: "eu-south-2"
+    REPO_NAME: "wordpress"
+    AWS_ACCOUNT_ID: "703671920691"
+
+phases:
+  pre_build:
+    commands:
+      - echo "Iniciando login en Amazon ECR..."
+      - aws --version
+      - $(aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com)
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - echo "Usando tag: $IMAGE_TAG"
+  build:
+    commands:
+      - echo "Construyendo imagen Docker..."
+      - docker build -t ${REPO_NAME}:${IMAGE_TAG} .
+      - docker tag ${REPO_NAME}:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO_NAME}:${IMAGE_TAG}
+  post_build:
+    commands:
+      - echo "Subiendo imagen a Amazon ECR..."
+      - docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO_NAME}:${IMAGE_TAG}
+      - echo "Imagen subida correctamente"
+      - echo "Generando imagedefinitions.json..."
+      - printf '[{"name":"wordpress","imageUri":"%s"}]' ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO_NAME}:${IMAGE_TAG} > imagedefinitions.json
+artifacts:
+  files:
+    - imagedefinitions.json
