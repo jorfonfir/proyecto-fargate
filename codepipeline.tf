@@ -189,7 +189,7 @@ resource "aws_codebuild_project" "wordpress_image_build" {
   source {
     type      = "GITHUB"
     location  = "https://github.com/jorfonfir/proyecto-fargate.git"
-    buildspec = "buildspec.yml" # ✅ Esta línea va aquí
+    buildspec = "buildspec.yml" 
   }
 }
 
