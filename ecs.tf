@@ -107,6 +107,7 @@ resource "aws_iam_role" "ecs_task_role" {
   })
 }
 
+# Logs con cloudwatch
 resource "aws_cloudwatch_log_group" "wordpress" {
   name              = "/ecs/wordpress"
   retention_in_days = 14

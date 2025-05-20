@@ -68,6 +68,35 @@ resource "aws_iam_role_policy_attachment" "codepipeline_s3_attachment" {
   policy_arn = aws_iam_policy.codepipeline_s3_policy.arn
 }
 
+resource "aws_iam_policy" "codepipeline_ecs_policy" {
+  name = "codepipeline-ecs-access"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "ecs:DescribeServices",
+          "ecs:DescribeTaskDefinition",
+          "ecs:DescribeTasks",
+          "ecs:ListTasks",
+          "ecs:RegisterTaskDefinition",
+          "ecs:UpdateService"
+        ],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = "iam:PassRole",
+        Resource = [
+          aws_iam_role.ecs_task_execution_role.arn,
+          aws_iam_role.ecs_task_role.arn
+        ]
+      }
+    ]
+  })
+}
 # IAM Role for CodeBuild
 resource "aws_iam_role" "codebuild_push_ecr_role" {
   name = "codebuild-push-ecr-role"
