@@ -97,6 +97,12 @@ resource "aws_iam_policy" "codepipeline_ecs_policy" {
     ]
   })
 }
+
+resource "aws_iam_role_policy_attachment" "codepipeline_ecs_attachment" {
+  role       = aws_iam_role.codepipeline_role.name
+  policy_arn = aws_iam_policy.codepipeline_ecs_policy.arn
+}
+
 # IAM Role for CodeBuild
 resource "aws_iam_role" "codebuild_push_ecr_role" {
   name = "codebuild-push-ecr-role"
