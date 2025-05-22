@@ -4,7 +4,7 @@ env:
   variables:
     AWS_REGION: "eu-south-2"
     REPO_NAME: "wordpress"
-    AWS_ACCOUNT_ID: "703671920691"
+    AWS_ACCOUNT_ID: "XXXXXXXXXX"
 
 phases:
   pre_build:
